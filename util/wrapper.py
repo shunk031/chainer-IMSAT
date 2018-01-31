@@ -13,89 +13,48 @@ class ClusterWrapper(chainer.Chain):
         with self.init_scope():
             self.encoder = encoder
 
-        self.prop_eps = prop_eps
+    def classify(self, x):
+        y = F.softmax(self.encoder(x))
+        return y
 
-    def aux(self, x):
-        return self.encoder(x)
+    def compute_entropy(self, p):
+        if p.ndim == 2:
+            return -F.sum(p * F.log(p + 1e-16), axis=1)
 
-    def entropy(self, p):
-        if not isinstance(p, chainer.Variable):
-            p = chainer.Variable(p)
+        return -F.sum(p * F.log(p + 1e-16))
 
-        if p.data.ndim == 1:
-            return -F.sum(p * F.log(p + 1e-8))
-        elif p.data.ndim == 2:
-            return -F.sum(p * F.log(p + 1e-8)) / len(p.data)
-        else:
-            raise NotImplementedError()
+    def compute_marginal_entropy(self, p_batch):
+        return self.compute_entropy(F.mean(p_batch, axis=0))
 
-    def KL(self, p, q):
+    def compute_KLd(self, p, q):
+        assert p.shape[0] == q.shape[0]
 
-        if not isinstance(p, chainer.Variable):
-            p = chainer.Variable(p)
-            q = chainer.Variable(q)
+        return F.reshape(F.sum(p * (F.log(p + 1e-16) - F.log(q + 1e-16)), axis=1), (-1, 1))
 
-        kl_d = F.sum(p * F.log((p + 1e-8) / (q + 1e-8))) / len(p.data)
-        return kl_d
-
-    def KL_distance(self, y0, y1):
-        s_y0 = F.softmax(y0)
-        s_y1 = F.softmax(y1)
-
-        return self.KL(s_y0, s_y1)
-
-    def convert_unit_vector(self, v):
+    def get_unit_vector(self, v):
         xp = chainer.cuda.get_array_module(v)
-        v = v / (xp.sqrt(xp.sum(v ** 2, axis=1)).reshape((-1, 1)) + 1e-16)
-        return v
 
-    def VAT(self, x, xi=10, Ip=1):
+        if v.ndim == 4:
+            return v / (xp.sqrt(xp.sum(v ** 2, axis=(1, 2, 3))).reahape((-1, 1, 1, 1)) + 1e-16)
+        return v / (xp.sqrt(xp.sum(v ** 2, axis=1)).reshape((-1, 1)) + 1e-16)
+
+    def compute_lds(self, x, xi=10, eps=1, Ip=1):
         xp = chainer.cuda.get_array_module(x)
 
-        if not isinstance(x, chainer.Variable):
-            x = chainer.Variable(x)
-
-        with chainer.using_config('train', False):
-            y1 = self.encoder(x)
+        y1 = self.classify(x)
         y1.unchain_backward()
 
-        d = xp.random.normal(size=x.shape)
-        d = d / xp.sqrt(xp.sum(d ** 2, axis=1)).reshape((x.shape[0], 1))
-
+        d = chainer.Variable(self.get_unit_vector(xp.random.normal(size=x.shape)).astype(xp.float32))
         for ip in range(Ip):
-            d_var = chainer.Variable(d.astype(np.float32))
+            y2 = self.classify(x + xi * d)
+            kld = F.sum(self.compute_KLd(y1, y2))
+            kld.backward()
+            d = self.get_unit_vector(d.grad)
 
-            with chainer.using_config('train', False):
-                y2 = self.encoder(x + xi * d_var)
+        y2 = self.classify(x + eps * d)
+        return -self.compute_KLd(y1, y2)
 
-            kl_d = self.KL(y1, y2)
-            kl_d.backward()
-            d = d_var.grad
-            d = self.convert_unit_vector(d)
-        d_var = chainer.Variable(d.astype(np.float32))
-
-        with chainer.using_config('train', False):
-            y2 = self.encoder(x + self.prop_eps * d_var)
-
-        vat_value = self.KL_distance(y1, y2)
-        return vat_value
-
-    def loss_equal(self, x):
-        if not isinstance(x, chainer.Variable):
-            x = chainer.Variable(x.astype(np.float32))
-
-        p_logit = self.encoder(x)
-        p = F.softmax(p_logit)
-        p_ave = F.sum(p, axis=0) / x.data.shape[0]
-        entropy = self.entropy(p)
-
-        return entropy, -F.sum(p_ave * F.log(p_ave + 1e-8))
-
-    def loss_unlabeled(self, x):
-        vat_loss = self.VAT(x)
-        return vat_loss
-
-    def loss_test(self, x, t):
+    def compute_accuracy(self, x, t):
         xp = chainer.cuda.get_array_module(x)
         with chainer.using_config('train', False):
             prob = F.softmax(self.encoder(x)).data
@@ -117,8 +76,7 @@ class ClusterWrapper(chainer.Chain):
 
         indices = m.compute(-mat)
         corresp = [indices[i][1] for i in range(self.encoder.n_class)]
-        pred_corresp = [corresp[int(predicted)] for predicted in prediction]
+        pred_corresp = xp.asarray([corresp[int(predicted)] for predicted in prediction])
         acc = xp.sum(pred_corresp == tt) / len(tt)
 
-        chainer.report({'accuracy': acc,
-                        'entropy': entropy}, self)
+        chainer.report({'accuracy': acc}, self)

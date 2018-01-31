@@ -4,9 +4,9 @@ import argparse
 def parse_args():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', type=int, default=10,
+    parser.add_argument('--epoch', type=int, default=50,
                         help='Number of epochs to train')
-    parser.add_argument('--batchsize', type=int, default=32,
+    parser.add_argument('--batchsize', type=int, default=250,
                         help='Learning minibatch size')
     parser.add_argument('--gpu', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU')

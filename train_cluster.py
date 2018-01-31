@@ -31,18 +31,16 @@ def main():
     updater = IMSATClusterUpdater(train_iter, optimizer, mu=args.mu, lam=args.lam, device=args.gpu)
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), args.out)
 
-    print_interval = 50, 'iteration'
-
     trainer.extend(extensions.Evaluator(
-        test_iter, encoder, device=args.gpu, eval_func=encoder.loss_test),
-        trigger=print_interval)
-    trainer.extend(extensions.LogReport(), trigger=print_interval)
+        test_iter, encoder, device=args.gpu, eval_func=encoder.compute_accuracy),
+        trigger=(1, 'epoch'))
+    trainer.extend(extensions.LogReport(), trigger=(1, 'epoch'))
     trainer.extend(extensions.PrintReport([
-        'epoch', 'iteration', 'main/max_entropy', 'main/min_entropy', 'main/vat',
-        'validation/main/accuracy', 'validation/main/entropy'
-    ]), trigger=print_interval)
+        'epoch', 'iteration', 'main/loss', 'main/entropy', 'main/conditional_entropy', 'main/Rsat',
+        'validation/main/accuracy',
+    ]), trigger=(1, 'epoch'))
     trainer.extend(extensions.snapshot_object(
-        encoder, 'model_epoch_{.updater.epoch}'), trigger=print_interval)
+        encoder, 'model_epoch_{.updater.epoch}.npz'), trigger=(1, 'epoch'))
     trainer.extend(extensions.ProgressBar(update_interval=10))
 
     trainer.run()
