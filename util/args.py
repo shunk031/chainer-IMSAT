@@ -1,6 +1,9 @@
 import argparse
 
 
+DATASETS = ['mnist', '20news']
+
+
 def parse_args():
 
     parser = argparse.ArgumentParser()
@@ -14,6 +17,7 @@ def parse_args():
                         help='Output directory')
     parser.add_argument('--mu', type=float, default=4.0)
     parser.add_argument('--lam', type=float, default=0.1)
-    parser.add_argument('--epsilon', type=float, default=1.0)
+    parser.add_argument('--dataset', type=str,
+                        choices=DATASETS, default='mnist')
 
     return parser.parse_args()
