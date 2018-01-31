@@ -1,3 +1,5 @@
 # gitignore for chainer-IMSAT
 
+*.npz
+
 __pycache__/
