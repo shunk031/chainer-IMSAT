@@ -22,5 +22,6 @@ class Encoder(chainer.Chain):
 
         h = F.relu(self.bn1(self.fc1(x)))
         h = F.relu(self.bn2(self.fc2(h)))
+        h = self.fc3(h)
 
         return h

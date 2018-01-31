@@ -120,7 +120,5 @@ class ClusterWrapper(chainer.Chain):
         pred_corresp = [corresp[int(predicted)] for predicted in prediction]
         acc = xp.sum(pred_corresp == tt) / len(tt)
 
-        chainer.report({'acc': chainer.Variable(acc),
-                        'entropy': chainer.Variable(entropy)}, self)
-
-        return acc, entropy
+        chainer.report({'accuracy': acc,
+                        'entropy': entropy}, self)
