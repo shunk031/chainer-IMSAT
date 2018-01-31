@@ -26,5 +26,5 @@ python train_cluster.py --epoch 50 --batchsize 250 --gpu 0 --dataset 20news
 
 - [Weihua Hu, Takeru Miyato, Seiya Tokui, Eiichi Matsumoto and Masashi Sugiyama. Learning Discrete Representations via Information Maximizing Self-Augmented Training. In ICML, 2017](https://arxiv.org/abs/1702.08720)
 - [weihua916/imsat: Reproducing code for the paper "Learning Discrete Representations via Information Maximizing Self-Augmented Training"](https://github.com/weihua916/imsat)
-- [IMSAT/model.py at master · musyoku/IMSAT https://github.com/musyoku/IMSAT](https://github.com/musyoku/IMSAT)
-- [crcrpar/imsat at renewal https://github.com/crcrpar/imsat/tree/renewal](https://github.com/crcrpar/imsat/tree/renewal)
+- [musyoku/IMSAT: Chainer implementation of Information Maximizing Self Augmented Training](https://github.com/musyoku/IMSAT)
+- [crcrpar/imsat at renewal](https://github.com/crcrpar/imsat/tree/renewal)
