@@ -17,13 +17,14 @@ class IMSATClusterUpdater(training.StandardUpdater):
     def update_core(self):
         batch = self._iterators['main'].next()
         in_arrays = self.converter(batch, self.device)
+        batch_size = self._iterators['main'].batch_size
 
         optimizer = self._optimizers['main']
         model = optimizer.target
         p = model.classify(in_arrays)
         hy = model.compute_marginal_entropy(p)
-        hy_x = F.sum(model.compute_entropy(p)) / self._iterators['main'].batch_size
-        Rsat = -F.sum(model.compute_lds(in_arrays)) / self._iterators['main'].batch_size
+        hy_x = F.sum(model.compute_entropy(p)) / batch_size
+        Rsat = -F.sum(model.compute_lds(in_arrays)) / batch_size
 
         loss = Rsat - self.lam * (self.mu * hy - hy_x)
         model.cleargrads()
