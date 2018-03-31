@@ -59,8 +59,6 @@ class ClusterWrapper(chainer.Chain):
         with chainer.using_config('train', False):
             prob = F.softmax(self.encoder(x)).data
 
-        p_margin = xp.sum(prob, axis=0) / len(prob)
-        entropy = xp.sum(-p_margin * xp.log(p_margin + 1e-8))
         prediction = xp.argmax(prob, axis=1)
 
         if isinstance(t, chainer.Variable):
