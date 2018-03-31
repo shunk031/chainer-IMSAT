@@ -8,6 +8,7 @@ from munkres import Munkres
 class ClusterWrapper(chainer.Chain):
 
     def __init__(self, encoder, prop_eps):
+        self.prop_eps = prop_eps
 
         super(ClusterWrapper, self).__init__()
         with self.init_scope():
@@ -38,7 +39,7 @@ class ClusterWrapper(chainer.Chain):
             return v / (xp.sqrt(xp.sum(v ** 2, axis=(1, 2, 3))).reahape((-1, 1, 1, 1)) + 1e-16)
         return v / (xp.sqrt(xp.sum(v ** 2, axis=1)).reshape((-1, 1)) + 1e-16)
 
-    def compute_lds(self, x, xi=10, eps=1, Ip=1):
+    def compute_lds(self, x, xi=10, Ip=1):
         xp = chainer.cuda.get_array_module(x)
 
         y1 = self.classify(x)
@@ -51,7 +52,7 @@ class ClusterWrapper(chainer.Chain):
             kld.backward()
             d = self.get_unit_vector(d.grad)
 
-        y2 = self.classify(x + eps * d)
+        y2 = self.classify(x + self.prop_eps * d)
         return -self.compute_KLd(y1, y2)
 
     def compute_accuracy(self, x, t):
