@@ -35,7 +35,7 @@ class ClusterWrapper(chainer.Chain):
         xp = chainer.cuda.get_array_module(v)
 
         if v.ndim == 4:
-            return v / (xp.sqrt(xp.sum(v ** 2, axis=(1, 2, 3))).reahape((-1, 1, 1, 1)) + 1e-16)
+            return v / (xp.sqrt(xp.sum(v ** 2, axis=(1, 2, 3))).reshape((-1, 1, 1, 1)) + 1e-16)
         return v / (xp.sqrt(xp.sum(v ** 2, axis=1)).reshape((-1, 1)) + 1e-16)
 
     def compute_lds(self, x, xi=10, Ip=1):
